@@ -1,5 +1,5 @@
-from icb.definitions import d_20210101
-from icb.map import Map
+from src.icb.definitions import d_20210101
+from src.icb.map import Map
 
 DEFINITIONS = {
     "20210101": d_20210101

@@ -3,3 +3,8 @@
 /.idea/py-icb.iml
 /.idea/vcs.xml
 /.idea/.name
+/build/lib/icb/definitions/__init__.py
+/build/lib/icb/__init__.py
+/build/lib/icb/icb.py
+/build/lib/icb/definitions/icb_20210101.py
+/build/lib/icb/map.py
