@@ -1,1 +1,1 @@
-from src.icb.icb import ICB
+from icb.icb import ICB

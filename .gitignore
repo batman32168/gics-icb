@@ -8,3 +8,11 @@
 /build/lib/icb/icb.py
 /build/lib/icb/definitions/icb_20210101.py
 /build/lib/icb/map.py
+/src/__init__.py
+/src/icb.egg-info/SOURCES.txt
+/data
+/src/icb_batman32168.egg-info/dependency_links.txt
+/src/icb.egg-info/dependency_links.txt
+*-info
+*.whl
+*\.gz
