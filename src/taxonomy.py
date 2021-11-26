@@ -1,33 +1,50 @@
-from icb.definitions import d_20210101
-from icb.map import Map
+from src.mapping.taxonomy import TaxonomyMap
+from src.definitions import *
 
-DEFINITIONS = {
-    "20210101": d_20210101
+
+TAXONOMIES ={
+    "GICS_2014": gics_2014,
+    "GICS_2016": gics_2016,
+    "GICS_2018": gics_2018,
+    "ICB_2014": icb_2021,
+    "ICB_2016": icb_2021,
+    "ICB_2018": icb_2021,
+    "ICB_2021": icb_2021,
 }
 
-DEFAULT_VERSION = '20210101'
+BENCHMARKS ={
+    "GICS",
+    "ICB"
+}
+YEAR ={
+    "2014", "2016", "2018", "2021"
+}
 
-class ICB:
+DEFAULT_CLASSIFICATION ="GICS"
+DEFAULT_CLASSIFICATION_YEAR = '2018'
 
-    def __init__(self, code: str = None, version: str = DEFAULT_VERSION):
-        """Represents a ICB code. You can instantiate ICB codes using a string representing a code.
-        The string has to be a valid ICB. If it's not, that is_valid method will return false.
+class Taxonomy:
+    def __init__(self, code: str = None, benchmark: str = DEFAULT_CLASSIFICATION, year: str = DEFAULT_CLASSIFICATION_YEAR):
+        """Represents a Classification code. You can instantiate GICS/ICB codes using a string representing a code.
+        The string has to be a valid classification. If it's not, that is_valid method will return false.
         Note:
-            that creating an empty ICB will mark it as invalid but can still be used to query the definitions
+            that creating an empty classification will mark it as invalid but can still be used to query the definitions
             (although that object itself will not be a definition)
         Args:
-         code (str): ICB code to parse. Valid ICB codes are strings 2 to 8 characters long, with even length.
-         version (str):
+         code (str): Classification code to parse. Valid codes are strings 2 to 8 characters long, with even length.
+         benchmark (str): Type of classification. Possible values are GICS and ICB
+         year (str): Year of the definition of the classification
         Raises:
             ValueError: When given an invalid version
         """
-        self._definition_version = version
-        _definition = DEFINITIONS.get(self._definition_version)
+        self._year=year
+        _definition = TAXONOMIES.get("{}_{}".format(benchmark,year))
 
         if not _definition:
-            raise ValueError(f'Unsupported ICB version: {version}. Available versions are {list(DEFINITIONS.keys())}')
+            raise ValueError(f'Unsupported benchmark {benchmark} and/or year {year} combine. Available pairs are '
+                             f'{list(TAXONOMIES.keys())}')
 
-        self._definition = Map.create_recursively(_definition)
+        self._definition = TaxonomyMap.create_recursively(_definition)
 
         self._code = code
 
@@ -55,80 +72,89 @@ class ICB:
         return self._code
 
     @property
-    def industry(self):
-        """Gets the definition for the sector of this ICB object (ICB level 1)
+    def current_level(self):
+        """Gets the current level of this classification
         Returns:
-            Definition of the ICB level. It has 3 properties: name, description and code.
-            Keep in mind that only level 1 and level 4 usually has a description.
+            The value of the current level
+        """
+        return round(len(self.code)/2)
+
+    @property
+    def year(self):
+        return self._year
+
+    @property
+    def first_level(self):
+        """Gets the definition for the level 1
+        Returns:
+            Definition of the classification level. It has 3 properties: name, description and code.
+            Keep in mind that only level 1 (ICB) and level 4 usually has a description.
         """
         return self.level(1)
 
     @property
-    def super_sector(self):
-        """Gets the definition for the industry group of this ICB object (ICB level 2)
+    def second_level(self):
+        """Gets the definition  level 2
         Returns:
-            Definition of the ICB level. It has 3 properties: name, description and code.
-            Keep in mind that only level 1 and level 4 usually has a description.
+            Definition of the classification level. It has 1 property: name
         """
         return self.level(2)
 
     @property
-    def sector(self):
-        """Gets the definition for the industry of this ICB object (ICB level 3)
+    def third_level(self):
+        """Gets the definition for the level 3
         Returns:
-            Definition of the ICB level. It has 3 properties: name, description and code.
-            Keep in mind that only level 1 and level 4 usually has a description.
+            Definition of the classification level. It has 1 property: name.
         """
         return self.level(3)
 
     @property
-    def sub_sector(self):
-        """Gets the definition for the sub-industry of this ICB object (ICB level 4)
+    def fourth_sector(self):
+        """Gets the definition for the level 4.
         Returns:
-            Definition of the ICB level. It has 3 properties: name, description and code.
-            Keep in mind that only level 1 and level 4 usually has a description.
+            Definition of the classification level. It has 3 properties: name, description and code.
         """
         return self.level(4)
 
     @property
     def children(self):
-        """Gets all the child level elements from this ICB level.
-        For example, for a Industry level ICB, it will return all Supersector in that Industry.
-        If the ICB is invalid (or empty, as with a null code), it will return all Industry.
-        A Subsector level ICB will return an empty array.
+        """Gets all the child level elements from this classification level.
+        For example, for a 1st level classification, it will return all 2nd level in that folder.
+        If the classification is invalid (or empty, as with a null code), it will return all 1st level classification.
+        A 4th level classification will return an empty array.
         Returns:
-            List containing objects with properties code (the ICB code), name (the name of this ICB),
-            and description (where applicable)
+            List containing objects with properties code (the classification code), name (the name of this
+            classification), and description (where applicable)
         """
         if self.is_valid:
             keys = filter(lambda k: k.startswith(self._code) and len(k) == len(self._code) + 2, self._definition.keys())
         else:
             keys = filter(lambda k: len(k) == 2, self._definition.keys())
 
-        return list(map(lambda k: Map({
+        return list(map(lambda k: TaxonomyMap({
             'code': k,
             'name': self._definition[k].name,
             'description': self._definition[k].description
         }), keys))
 
-    def _get_definition(self, icb_code):
-        definition = self._definition[icb_code]
-        definition.code = icb_code
-
+    def _get_definition(self, code):
+        definition = self._definition[code]
+        definition.code = code
         return definition
 
-    def level(self, icb_level: int):
-        """Gets the definition of the given level for this ICB object.
+    def level(self, level: int):
+        """Gets the definition of the given level for this classification object.
         Args:
-            icb_level: Level of ICB to get.
-                Valid levels are: 1 (Industry), 2 (Supersector), 3 (Sector), 4 (Subsector)
+            level: Level of classification to get.
+                Valid levels are: 1, 2, 3, 4
         Returns:
+            The level of the current classification. None if no valid classification is given.
         """
-        if not self.is_valid or not icb_level or not isinstance(icb_level,
-                                                                 int) or icb_level < 1 or icb_level > 4:
+        if not self.is_valid or not level or not isinstance(level,int) or level < 1 or level > 4:
             return None
+        return self._levels[level - 1]
 
-        return self._levels[icb_level - 1]
+
 
     def is_same(self, another_icb: 'ICB') -> bool:
         """Determines if this ICB is the same as the given one.

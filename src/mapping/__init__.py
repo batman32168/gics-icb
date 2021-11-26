@@ -1,0 +1,1 @@
+from src.mapping.gics2icb import mapping as gics2icb
