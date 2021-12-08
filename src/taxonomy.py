@@ -37,6 +37,7 @@ class Taxonomy:
         Raises:
             ValueError: When given an invalid version
         """
+        self._benchmark = benchmark
         self._year=year
         _definition = TAXONOMIES.get("{}_{}".format(benchmark,year))
 
@@ -82,6 +83,10 @@ class Taxonomy:
     @property
     def year(self):
         return self._year
+
+    @property
+    def benchmark(self):
+        return self._benchmark
 
     @property
     def first_level(self):
@@ -154,8 +159,6 @@ class Taxonomy:
             return None
         return self._levels[level - 1]
 
-
-
     def is_same(self, another_icb: 'ICB') -> bool:
         """Determines if this ICB is the same as the given one.
         To be considered the same both ICB must either be invalid, or be valid and with the exact same code.
@@ -209,3 +212,48 @@ class Taxonomy:
             another_icb: ICB object to compare with
         """
         return another_icb.is_immediate_within(self)
+
+    def write_pp_file(self):
+        text = ''
+        for key in self._definition.keys():
+            self._code=key
+            qualifier =''
+            root_qualifier =''
+            if(len(key)==2):
+                if (self.benchmark == 'GICS'):
+                    qualifier = 'GICS-SECTOR'
+                elif (self.benchmark == 'ICB'):
+                    qualifier = 'ICB-INDUSTRY'
+            elif(len(key)==4):
+                if (self.benchmark == 'GICS'):
+                    qualifier = 'GICS-INDUSTRY_GROUP'
+                elif (self.benchmark == 'ICB'):
+                    qualifier = 'ICB-SUPERSECTOR'
+            elif (len(key) == 6):
+                if (self.benchmark == 'GICS'):
+                    qualifier = 'GICS-INDUSTRY'
+                elif (self.benchmark == 'ICB'):
+                    qualifier = 'ICB-SECTOR'
+            elif (len(key) == 8):
+                if (self.benchmark == 'GICS'):
+                    qualifier = 'GICS-SUB_INDUSTRY'
+                    root_qualifier ='GICS-SECTOR'
+                elif (self.benchmark == 'ICB'):
+                    qualifier = 'ICB-SUBSECTOR'
+                    root_qualifier ='ICB-INDUSTRY'
+            tempchild=''
+            for child in self.children:
+                tempchild +=child['code'] +','
+            if tempchild != '':
+                text += "{}.children    = {}\r\n".format(key, tempchild[:-1])
+            text += "{}.label       = {}\r\n".format(key,self._get_definition(key)['name'])
+            if root_qualifier != '':
+                text += "{}.data        = {}\={};{}\={}\r\n".\
+                    format(key, qualifier, self._get_definition(key)['name'].upper().replace(' ','_').replace('&', '_'),
+                           root_qualifier,"juhu")
+            else:
+                text += "{}.data        = {}\={}\r\n".format(key, qualifier, self._get_definition(key)['name'].upper().replace(' ','_').replace('&','_'))
+            if 'description' in self._get_definition(key):
+                text += "{}.description = {}\r\n".format(key, self._get_definition(key)['description'])
+            text +='\r\n'
+        return text
