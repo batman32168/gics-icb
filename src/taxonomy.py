@@ -218,7 +218,6 @@ class Taxonomy:
         for key in self._definition.keys():
             self._code=key
             qualifier =''
-            root_qualifier =''
             if(len(key)==2):
                 if (self.benchmark == 'GICS'):
                     qualifier = 'GICS-SECTOR'
@@ -237,23 +236,19 @@ class Taxonomy:
             elif (len(key) == 8):
                 if (self.benchmark == 'GICS'):
                     qualifier = 'GICS-SUB_INDUSTRY'
-                    root_qualifier ='GICS-SECTOR'
                 elif (self.benchmark == 'ICB'):
                     qualifier = 'ICB-SUBSECTOR'
-                    root_qualifier ='ICB-INDUSTRY'
             tempchild=''
             for child in self.children:
                 tempchild +=child['code'] +','
             if tempchild != '':
-                text += "{}.children    = {}\r\n".format(key, tempchild[:-1])
-            text += "{}.label       = {}\r\n".format(key,self._get_definition(key)['name'])
-            if root_qualifier != '':
-                text += "{}.data        = {}\={};{}\={}\r\n".\
-                    format(key, qualifier, self._get_definition(key)['name'].upper().replace(' ','_').replace('&', '_'),
-                           root_qualifier,"juhu")
+                text += f"{key}.children    = {tempchild[:-1]}\r"
+            text += f"{key}.label       = {self._get_definition(key)['name']}\r"
+            if(len(key)!=2):
+                text += f"{key}.data        = ROOTCLASS-ID\={key[:-len(key)+2]};CLASS-ID\={key};{qualifier}\={self._get_definition(key)['name'].upper().replace(' ', '_').replace('&', '_').replace(',','_')}\r"
             else:
-                text += "{}.data        = {}\={}\r\n".format(key, qualifier, self._get_definition(key)['name'].upper().replace(' ','_').replace('&','_'))
+                text += f"{key}.data        = CLASS-ID\={key};{qualifier}\={self._get_definition(key)['name'].upper().replace(' ','_').replace('&','_').replace(',','_')}\r"
             if 'description' in self._get_definition(key):
-                text += "{}.description = {}\r\n".format(key, self._get_definition(key)['description'])
-            text +='\r\n'
+                text += f"{key}.description = {self._get_definition(key)['description']}\r"
+            text +='\r'
         return text
